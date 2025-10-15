@@ -10,37 +10,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <!-- Load Lucide Icons for better UI -->
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    
+    <!-- ************* NEW: Load Stripe.js (Client-side integration) ************* -->
+    <script src="https://js.stripe.com/v3/"></script>
+    
     <style>
         body {
             font-family: 'Inter', sans-serif;
             background-color: #1a202c; /* Dark background */
         }
-        .container-card {
-            background-color: #2d3748; /* Slightly lighter dark card */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-        }
-        .upload-box {
-            border: 2px dashed #4a5568;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .upload-box:hover {
-            border-color: #4299e1;
-            background-color: #2c3545;
-        }
-        .rtl-input {
-            text-align: right;
-        }
-        .rating-input {
-            appearance: none;
-            -moz-appearance: textfield;
-            text-align: center;
-        }
-        .rating-input::-webkit-inner-spin-button, 
-        .rating-input::-webkit-outer-spin-button { 
-            -webkit-appearance: none;
-            margin: 0;
-        }
+        /* ... existing styles ... */
         .tab-button.active {
             background-color: #4299e1;
             color: white;
@@ -49,6 +28,7 @@
         .tab-button {
             transition: all 0.2s;
         }
+        /* ... existing styles ... */
     </style>
 </head>
 <body class="min-h-screen p-4 sm:p-8 flex justify-center items-start">
@@ -92,7 +72,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                 <div>
                     <label for="playerName" class="block text-sm font-medium text-gray-300 mb-1">اسم اللاعب:</label>
-                    <input type="text" id="playerName" value="راشد" class="rtl-input w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500" placeholder="مثال: راشد">
+                    <input type="text" id="playerName" class="rtl-input w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500" placeholder="مثال: راشد">
                 </div>
                 <div>
                     <label for="playerAge" class="block text-sm font-medium text-gray-300 mb-1">العمر:</label>
@@ -180,7 +160,7 @@
                 <div class="space-y-4">
                     <textarea id="analysisPrompt" rows="4" class="rtl-input w-full p-3 rounded-lg bg-gray-700 text-white placeholder-gray-400 focus:ring-blue-500 focus:border-blue-500" placeholder="صف الأداء الذي تريد تحليله (على سبيل المثال: 'حلل حركة أقدام اللاعب وموقعه الدفاعي خلال آخر 30 ثانية من هذا المقطع.')."></textarea>
                     
-                    <button onclick="runAnalysis()" id="analyzeButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
+                    <button onclick="handlePaymentOrMock()" id="analyzeButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-200">
                         <i data-lucide="cpu" class="w-5 h-5 ml-2 inline"></i> بدء التحليل الذكي (احترافي +10$)
                     </button>
                 </div>
@@ -245,6 +225,11 @@
             // Set initial state of the analysis mode
             updateAnalysisMode();
         }
+        
+        // ************* NEW: Stripe Public Key Placeholder *************
+        // Replace with your actual Stripe Public Key (e.g., 'pk_live_xxxxxxxxxx')
+        const stripe = Stripe('YOUR_STRIPE_PUBLIC_KEY');
+        // *************************************************************
 
         // --- SPA Navigation Logic ---
         function showTab(tabId) {
@@ -291,9 +276,11 @@
             const modeCard = document.getElementById('analysisModeCard');
             
             if (isAIEnabled) {
-                // AI Mode (Can include fee logic)
+                // AI Mode (Payment required)
                 modeTextSpan.innerHTML = '<span class="text-white text-2xl mr-2">احترافي (+10$)</span> <i data-lucide="dollar-sign" class="w-5 h-5 text-green-400"></i>';
-                analyzeButton.innerHTML = '<i data-lucide="cpu" class="w-5 h-5 ml-2 inline"></i> بدء التحليل الذكي (احترافي +10$)';
+                analyzeButton.innerHTML = '<i data-lucide="lock" class="w-5 h-5 ml-2 inline"></i> دفع 10$ وبدء التحليل الاحترافي';
+                analyzeButton.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                analyzeButton.classList.add('bg-green-600', 'hover:bg-green-700');
                 modeCard.classList.remove('border-red-500/50');
                 modeCard.classList.add('border-blue-500/50');
                 modeTextSpan.classList.add('text-green-400');
@@ -302,6 +289,8 @@
                 // Mock Mode (Free and Fast)
                 modeTextSpan.innerHTML = '<span class="text-red-400 text-2xl mr-2">تجريبي (مجاني)</span> <i data-lucide="alert-triangle" class="w-5 h-5 text-red-400"></i>';
                 analyzeButton.innerHTML = '<i data-lucide="zap" class="w-5 h-5 ml-2 inline"></i> بدء التحليل التجريبي السريع (Mock)';
+                analyzeButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+                analyzeButton.classList.add('bg-blue-600', 'hover:bg-blue-700');
                 modeCard.classList.remove('border-blue-500/50');
                 modeCard.classList.add('border-red-500/50');
                 modeTextSpan.classList.remove('text-green-400');
@@ -346,6 +335,7 @@
 
         // Mock Analysis function to return a predefined response
         function getMockAnalysis(playerName) {
+            // ... (Mock content remains the same) ...
             return `**تقرير تحليل تجريبي سريع (تحليل وهمي)**
 
 هذا التقرير هو تحليل وهمي تم إنشاؤه محلياً ولا يعتمد على الذكاء الاصطناعي لتحليل الفيديو المرفوع. يتم عرض هذا التقرير لأنك اخترت وضع "التحليل التجريبي السريع".
@@ -366,7 +356,84 @@
 **التوصية:** التركيز على تدريبات الرؤية المحيطية والتحول السريع من الدفاع للهجوم، والعمل على دقة التسديد من خارج منطقة الجزاء.`;
         }
 
-        async function runAnalysis() {
+        /**
+         * New function to handle the button click: either initiates payment or runs mock analysis.
+         */
+        function handlePaymentOrMock() {
+            const isAIEnabled = document.getElementById('aiAnalysisToggle').checked;
+            
+            if (isAIEnabled) {
+                // Professional Mode - Initiate Payment
+                initiateStripeCheckout();
+            } else {
+                // Mock Mode - Run local analysis
+                runAnalysis();
+            }
+        }
+
+        /**
+         * New function to simulate Stripe Checkout initiation.
+         * NOTE: This is client-side only and requires a server to create the actual Checkout Session!
+         */
+        function initiateStripeCheckout() {
+             const resultText = document.getElementById('resultText');
+
+             if (stripe && stripe._apiKey !== 'YOUR_STRIPE_PUBLIC_KEY') {
+                // In a real application, you would make an AJAX call to your backend
+                // to create a Checkout Session ID (session.id).
+                
+                resultText.innerText = `
+                تمت محاكاة طلب الدفع بنجاح.
+                
+                **خطوتك التالية (الحقيقية):** يجب على الكود في هذه المرحلة أن يرسل طلبًا إلى **خادمك الخاص (Backend)**. يقوم الخادم بإنشاء جلسة دفع (Checkout Session) في Stripe ويُرجع لك معرف الجلسة (Session ID).
+
+                **مثال لمرحلة الخادم (Server-Side):**
+                
+                // Server-side code (Node.js example)
+                // const stripe = require('stripe')('sk_live_YOUR_SECRET_KEY');
+                // const session = await stripe.checkout.sessions.create({
+                //     payment_method_types: ['card'],
+                //     line_items: [{ price: 'price_id_for_10_dollars', quantity: 1 }],
+                //     mode: 'payment',
+                //     success_url: 'YOUR_SUCCESS_URL?session_id={CHECKOUT_SESSION_ID}',
+                //     cancel_url: 'YOUR_CANCEL_URL',
+                // });
+                // Send session.id back to the client
+                
+                
+                **الخطوة النهائية (Client-Side):**
+                
+                بمجرد حصولك على معرف الجلسة، تقوم بتحويل المستخدم إلى صفحة الدفع الآمنة لـ Stripe:
+                
+                // return stripe.redirectToCheckout({ sessionId: sessionIdFromBackend });
+                
+                `;
+                resultText.classList.remove('text-red-400');
+
+                // For the purpose of this demonstration, we simulate success and run the analysis.
+                // In a real app, 'runAnalysis()' would only run AFTER successful payment verification from your server.
+                setTimeout(() => {
+                     if (confirm("هل تم تأكيد الدفع بنجاح؟ (محاكاة)")) {
+                        runAnalysis(true); // Run the actual analysis after simulated payment
+                    } else {
+                        resultText.innerText = 'تم إلغاء عملية الدفع.';
+                        resultText.classList.add('text-red-400');
+                    }
+                }, 1000); 
+
+             } else {
+                resultText.innerText = `
+                **خطأ في المفتاح:** المفتاح العام لـ Stripe غير صحيح.
+                
+                **الخطوة 1:** يجب استبدال \`'YOUR_STRIPE_PUBLIC_KEY'\` في الكود بمفتاحك العام الحقيقي لـ Stripe.
+                **الخطوة 2:** يجب أن تكون لديك بنية تحتية خلفية (Backend) لتوليد جلسة الدفع الآمنة.
+                `;
+                resultText.classList.add('text-red-400');
+             }
+        }
+
+
+        async function runAnalysis(isPaid = false) {
             const isAIEnabled = document.getElementById('aiAnalysisToggle').checked;
             const prompt = document.getElementById('analysisPrompt').value.trim();
             const playerName = document.getElementById('playerName').value.trim();
@@ -394,8 +461,8 @@
             }
 
             // --- LOGIC SPLIT: MOCK ANALYSIS ---
-            if (!isAIEnabled) {
-                // Run Mock Analysis instantly
+            if (!isAIEnabled || !isPaid) {
+                // If AI is disabled OR Payment was NOT confirmed (in case of handlePaymentOrMock flow)
                 analyzeButton.disabled = true;
                 loadingIndicator.classList.remove('hidden');
                 resultText.innerText = 'جاري إعداد التحليل التجريبي...';
@@ -413,7 +480,7 @@
             
             // --- LOGIC SPLIT: AI ANALYSIS (Proceed with API Call) ---
 
-            // ***** التحقق من مفتاح API لنموذج الذكاء الاصطناعي *****
+            // ***** التحقق من مفتاح API لنموذج الذكاء الاصطناعي (Gemini) *****
             if (apiKey === "") {
                 const apiError = `خطأ في المصادقة: لا يمكن إجراء التحليل بالذكاء الاصطناعي. يجب وضع مفتاح Gemini API صالح في متغير 'apiKey' لتفعيل تحليل الفيديو.`;
                 console.error(apiError);
